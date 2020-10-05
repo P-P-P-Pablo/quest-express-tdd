@@ -12,11 +12,37 @@ app.get("/", (req, res) => {
   res.status(200).send({ message: "Hello World!" });
 });
 
-app.post("/", (req, res) => {
-  if (req.body.url && req.body.titre) {
-    res.status(201).json({ id: 1, url: req.body.url, title: req.body.titre });
+app.get("/bookmarks/:id", (req, res) => {
+  connection.query(
+    "SELECT * FROM bookmark WHERE id = ?",
+    req.params.id,
+    (err, result) => {
+      if (err) return res.status(404).json({ error: "Bookmark not found" });
+      if (result.length === 0)
+        return res.status(404).json({ error: "Bookmark not found" });
+      return res.status(200).json(result[0]);
+    }
+  );
+});
+
+app.post("/bookmarks", (req, res) => {
+  if (req.body.url && req.body.title) {
+    connection.query("INSERT INTO bookmark SET ?", req.body, (err, stats) => {
+      if (err)
+        return res.status(500).json({ error: err.message, sql: err.sql });
+
+      connection.query(
+        "SELECT * FROM bookmark WHERE id = ?",
+        stats.insertId,
+        (err, records) => {
+          if (err)
+            return res.status(500).json({ error: err.message, sql: err.sql });
+          return res.status(201).json(records[0]);
+        }
+      );
+    });
   } else {
-    res.status(422).send;
+    res.status(422).json({ error: "required field(s) missing" });
   }
 });
 
